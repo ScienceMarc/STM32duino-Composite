@@ -2,12 +2,13 @@
 
 #include <SPI.h>
 
-#define NOP __asm__ __volatile__ ("nop\n\t")
+#define NOP __asm__ __volatile__ ("nop\n\t") //Wait a single clock cycle, this may be pretty useless.
 
 #define SYNC PB8
 #define SIGNAL PB9
 
-HardwareTimer timer(1);
+HardwareTimer timer(1); //Uses hardware timer 1.
+                        //! THIS MAY AFFECT ALL PINS WHICH USE THIS TIMER IF YOU TRY TO USE PWM.
 
 volatile int lines = 1;
 
@@ -25,6 +26,8 @@ void setup() {
 
 
     Serial.begin(9600);
+
+    //This code adds an precise 64µS interrupt which calls line(), this is done to ensure that the lines all take exactly 64µS like they should.
     timer.pause();
     timer.setPeriod(64);
     timer.setChannel1Mode(TIMER_OUTPUT_COMPARE);
@@ -80,7 +83,9 @@ void hSync() {
     digitalWrite(SYNC, HIGH);
     delayMicroseconds(6);  // Back porch
 }
-void vSync() {
+void vSync() { //! THIS IS A FAKE PROGRESSIVE SCAN FOR PAL. TESTING SHOWS THIS DOES NOT REALLY WORK FOR NTSC. THIS MAY CAUSE DAMAGE TO AN OLD STYLE CRT BUT THAT MIGHT BE CONJECTURE.
+               //TODO: Add support for NTSC.
+               //* There are some strange timing issues with this and I'm not sure as to why
     if (lines < 3) {
         //digitalWrite(SIGNAL, LOW);
         digitalWrite(SYNC, LOW);
