@@ -2,6 +2,13 @@
 
 //Cheatsheet: http://www.batsocks.co.uk/readme/video_timing.htm
 
+/*
+* Uncomment #define SLOW_MODE if you do not want to use the -O3 optimizer
+* this will increase the size of the pixels dramatically.
+* this is not recommended
+*/
+#define SLOW_MODE
+
 #define NOP __asm__ __volatile__("nop\n\t")
 
 //Port manipulation
@@ -16,8 +23,14 @@
 #define SIGNAL PB9
 
 namespace VIDEO {
+#ifdef SLOW_MODE
 const int HEIGHT = 64;
-const int WIDTH = 64;
+const int WIDTH = 32;
+#endif
+#ifndef SLOW_MODE
+const int HEIGHT = 128;
+const int WIDTH = 128;
+#endif
 bool matrix[HEIGHT][WIDTH];
 volatile int lines = 1;
 
@@ -103,8 +116,9 @@ void drawRow(bool arr[]) {  // Draws a row from the matrix to the screen
     for (int i = 0; i < WIDTH; i++) {
         pulse(arr[i]);
         //* These NOPs are to create a bit of delay because otherwise the pixels
-        //are too small and are a little fuzzy because the signal did not have
-        //time to rise.
+        //* are too small and are a little fuzzy because the signal did not have
+        //* time to rise and fall.
+        #ifndef SLOW_MODE
         NOP;
         NOP;
         NOP;
@@ -121,16 +135,23 @@ void drawRow(bool arr[]) {  // Draws a row from the matrix to the screen
         NOP;
         NOP;
         NOP;
+        #endif
     }
     signalOff;
 }
 
+#ifndef SLOW_MODE
+const byte pixelHeight = 2;
+#endif
+#ifdef SLOW_MODE
+const byte pixelHeight = 7;
+#endif
 
 void line() {
     vSync();
     hSync();
     if (lines > 33) {
-        drawRow(matrix[min(HEIGHT - 1, (lines - 33) / 2)]);
+        drawRow(matrix[min(HEIGHT - 1, (lines - 33) / pixelHeight)]);
     }
 
     lines++;
