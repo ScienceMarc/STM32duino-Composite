@@ -1,7 +1,5 @@
 //Cheatsheet: http://www.batsocks.co.uk/readme/video_timing.htm
 
-//#include <SPI.h>
-
 #define NOP __asm__ __volatile__ ("nop\n\t")
 
 #define signalOn GPIOB->regs->BSRR = 0b0000001000000000
@@ -18,6 +16,10 @@ HardwareTimer timer(1); //Uses hardware timer 1.
 
 volatile int lines = 1;
 
+const int HEIGHT = 64;
+const int WIDTH = 64;
+bool matrix[HEIGHT][WIDTH];
+
 void setup() {
     pinMode(SYNC, OUTPUT);
     pinMode(SIGNAL, OUTPUT);
@@ -33,56 +35,29 @@ void setup() {
     timer.attachCompare1Interrupt(line);
     timer.refresh();
     timer.resume();
+
+    for (int i = 0; i < WIDTH; i++) {
+        putPixel(i,i,1);
+    }
+    
 }
 
 void loop() {
     
 }
 
-bool row1[] = {1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,};
-bool row2[] = {0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,};
-bool row3[] = {1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,};
-bool row4[] = {0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,};
-bool row5[] = {1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,};
-bool row6[] = {0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,};
-bool row7[] = {1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,};
-bool row8[] = {0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,};
-
 void line() {
     vSync();
     hSync();
     if (lines > 33) {
-        if (lines - 33 < 4) {
-            drawRow(row1);
-        }
-        else if (lines - 33 < 4+4*1) {
-            drawRow(row2);
-        }
-        else if (lines - 33 < 4+4*2) {
-            drawRow(row3);
-        }
-        else if (lines - 33 < 4+4*3) {
-            drawRow(row4);
-        }
-        else if (lines - 33 < 4+4*4) {
-            drawRow(row5);
-        }
-        else if (lines - 33 < 4+4*5) {
-            drawRow(row6);
-        }
-        else if (lines - 33 < 4+4*6) {
-            drawRow(row7);
-        }
-        else if (lines - 33 < 4+4*7) {
-            drawRow(row8);
-        }
+        drawRow(matrix[min(HEIGHT-1,(lines-33)/3)]);
     }
 
     
     lines++;
 }
 
-void pulse(bool white) {
+void pulse(bool white) { //Either sends a pulse or turns it off based on the color of the pixel
     if (white) {
         signalOn;
     }
@@ -90,9 +65,10 @@ void pulse(bool white) {
         signalOff;
     }
 }
-void drawRow(bool arr[]) {
-    for (int i = 0; i < 16; i++) {
+void drawRow(bool arr[]) { //Draws a row from the matrix to the screen
+    for (int i = 0; i < WIDTH; i++) {
         pulse(arr[i]);
+        //* These NOPs are to create a bit of delay because otherwise the pixels are too small and are a little fuzzy because the signal did not have time to rise.
         NOP;
         NOP;
         NOP;
@@ -112,6 +88,10 @@ void drawRow(bool arr[]) {
     }
     signalOff;
 }
+void putPixel(uint16_t x, uint16_t y, bool on) { //TODO: come up with a better name for the "on" parameter
+    matrix[x][y] = on;
+}
+
 
 void hSync() {
     signalOff;
