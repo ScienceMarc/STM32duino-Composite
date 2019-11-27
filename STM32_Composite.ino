@@ -7,8 +7,8 @@
 #define signalOn GPIOB->regs->BSRR = 0b0000001000000000
 #define signalOff GPIOB->regs->BRR = 0b0000001000000000
 
-#define syncOn GPIOB->regs->BSRR  =  0b0000000100000000
-#define syncOff GPIOB->regs->BSRR =  0b0000000100000000
+#define syncOn GPIOB->regs->BSRR =   0b0000000100000000
+#define syncOff GPIOB->regs->BRR =   0b0000000100000000
 
 #define SYNC PB8
 #define SIGNAL PB9
@@ -116,9 +116,9 @@ void drawRow(bool arr[]) {
 void hSync() {
     signalOff;
     delayMicroseconds(1);  // Front porch
-    digitalWrite(SYNC, LOW);
+    syncOff;
     delayMicroseconds(4);  // Horizontal Sync
-    digitalWrite(SYNC, HIGH);
+    syncOn;
     delayMicroseconds(7);  // Back porch
 }
 void vSync() { //! THIS IS A FAKE PROGRESSIVE SCAN FOR PAL. TESTING SHOWS THIS DOES NOT REALLY WORK FOR NTSC. THIS MAY CAUSE DAMAGE TO AN OLD STYLE CRT BUT THAT MIGHT BE CONJECTURE.
@@ -126,50 +126,50 @@ void vSync() { //! THIS IS A FAKE PROGRESSIVE SCAN FOR PAL. TESTING SHOWS THIS D
                //* There are some strange timing issues with this and I'm not sure as to why
     if (lines < 3) {
         signalOff;
-        digitalWrite(SYNC, LOW);
+        syncOff;
         delayMicroseconds(28);
-        digitalWrite(SYNC, HIGH);
+        syncOn;
         delayMicroseconds(4);
-        digitalWrite(SYNC, LOW);
+        syncOff;
         delayMicroseconds(28);
-        digitalWrite(SYNC, HIGH);
+        syncOn;
         lines++;
         return;
     } 
     else if (lines == 3) {
         signalOff;
-        digitalWrite(SYNC, LOW);
+        syncOff;
         delayMicroseconds(27);
-        digitalWrite(SYNC, HIGH);
+        syncOn;
         delayMicroseconds(4);
 
-        digitalWrite(SYNC, LOW);
+        syncOff;
         delayMicroseconds(2);
-        digitalWrite(SYNC, HIGH);
+        syncOn;
         lines = 4;
         return;
     } 
     else if (lines < 6) {
         signalOff;
-        digitalWrite(SYNC, LOW);
+        syncOff;
         delayMicroseconds(2);
-        digitalWrite(SYNC, HIGH);
+        syncOn;
         delayMicroseconds(29);
-        digitalWrite(SYNC, LOW);
+        syncOff;
         delayMicroseconds(2);
-        digitalWrite(SYNC, HIGH);
+        syncOn;
         lines++;
         return;
     } 
     else if (lines > 309) {
         signalOff;
-        digitalWrite(SYNC, LOW);
+        syncOff;
         delayMicroseconds(2);
-        digitalWrite(SYNC, HIGH);
+        syncOn;
         delayMicroseconds(29);
-        digitalWrite(SYNC, LOW);
+        syncOff;
         delayMicroseconds(2);
-        digitalWrite(SYNC, HIGH);
+        syncOn;
         lines++;
         if (lines >= 313) {
             lines = 0;
