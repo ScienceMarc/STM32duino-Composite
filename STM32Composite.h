@@ -7,7 +7,7 @@
 * this will increase the size of the pixels dramatically.
 * this is not recommended
 */
-#define SLOW_MODE
+//#define SLOW_MODE
 
 #define NOP __asm__ __volatile__("nop\n\t")
 
