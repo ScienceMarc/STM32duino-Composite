@@ -4,7 +4,7 @@ This library aims to generate a decent monochrome video signal using a run of th
 
 The code I wrote is by no means good and the video signal randomly jumps because I haven't gotten the vertical sync perfect.
 
-The code relys on the STM32's software timers to create a series of sync pulses every 64µS
+The code relies on the STM32's software timers to create a series of sync pulses every 64µS
 
 # Considerations
 This only works with PAL. I have not managed to get a progressive NTSC scan to work. If you know how to achieve one please open an issue or make a pull request.
