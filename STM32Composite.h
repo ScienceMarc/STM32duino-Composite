@@ -22,6 +22,9 @@
 #define SYNC PB8
 #define SIGNAL PB9
 
+#define WHITE true
+#define BLACK false
+
 namespace VIDEO {
 
 // You can define your own width and height if the defaults do not suite you for
@@ -44,7 +47,9 @@ const int width = WIDTH;
 bool matrix[height][width];
 volatile int lines = 1;
 
-void putPixel(int x, int y, bool color) { matrix[min(height - 1, y + 1)][min(width - 1, x + 1)] = color; }
+void putPixel(int x, int y, bool color) {
+    matrix[min(height - 1, y + 1)][min(width - 1, x + 1)] = color;
+}
 void drawFastHLine(int x, int y, int length, bool color) {
     for (int i = 0; i < length; i++) {
         putPixel(i + x, y, color);
@@ -97,7 +102,7 @@ void plotLineHigh(int x1, int y1, int x2, int y2, bool color) {
     int dy = y2 - y1;
     int xi = 1;
     if (dx < 0) {
-        xi += -1;
+        xi = -1;
         dx = -dx;
     }
     int D = 2 * dx - dy;
@@ -128,8 +133,12 @@ void drawLine(int x1, int y1, int x2, int y2, bool color) {
         }
     }
 }
-void clear() {
-    memset(VIDEO::matrix,0,sizeof(VIDEO::matrix));
+void clear() { memset(VIDEO::matrix, 0, sizeof(VIDEO::matrix)); }
+
+void drawTrig(int x1, int y1, int x2, int y2, int x3, int y3, bool color) {
+    drawLine(x1,y1,x2,y2,color);
+    drawLine(x1, y1, x3, y3, color);
+    drawLine(x2,y2,x3 + 1,y3,color);
 }
 namespace internalRendering {
 void hSync() {
@@ -220,15 +229,7 @@ void drawRow(bool arr[]) {  // Draws a row from the matrix to the screen
         NOP;
         NOP;
         NOP;
-        NOP; /*
-         NOP;
-         NOP;
-         NOP;
-         NOP;
-         NOP;
-         NOP;
-         NOP;
-         NOP;*/
+        NOP;
 #endif
     }
     signalOff;
@@ -252,7 +253,7 @@ void line() {
 
     lines++;
 }
-}  // namespace internalLineRendering
+}  // namespace internalRendering
 void begin() {
     pinMode(SYNC, OUTPUT);
     pinMode(SIGNAL, OUTPUT);
