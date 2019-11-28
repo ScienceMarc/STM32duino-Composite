@@ -133,12 +133,17 @@ void drawLine(int x1, int y1, int x2, int y2, bool color) {
         }
     }
 }
-void clear() { memset(VIDEO::matrix, 0, sizeof(VIDEO::matrix)); }
 
+void clear() { memset(VIDEO::matrix, 0, sizeof(VIDEO::matrix)); }
 void drawTrig(int x1, int y1, int x2, int y2, int x3, int y3, bool color) {
     drawLine(x1,y1,x2,y2,color);
     drawLine(x1, y1, x3, y3, color);
     drawLine(x2,y2,x3 + 1,y3,color);
+}
+void drawCircle(int x, int y, int radius, bool color) {
+    for (float a = 0; a < 360; a++) {
+        putPixel(sin(a*0.0174532925)*radius+x,cos(a*0.0174532925)*radius+y,color);
+    }
 }
 namespace internalRendering {
 void hSync() {
