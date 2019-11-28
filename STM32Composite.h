@@ -44,6 +44,94 @@ const int width = WIDTH;
 bool matrix[height][width];
 volatile int lines = 1;
 
+void putPixel(int x, int y, bool color) { matrix[min(height - 1, y + 1)][min(width - 1, x + 1)] = color; }
+void drawFastHLine(int x, int y, int length, bool color) {
+    for (int i = 0; i < length; i++) {
+        putPixel(i + x, y, color);
+    }
+}
+void drawFastVLine(int x, int y, int length, bool color) {
+    for (int i = 0; i < length; i++) {
+        putPixel(x, i + y, color);
+    }
+}
+
+void drawFullRect(int x1, int y1, int x2, int y2, bool color) {
+    for (int i = 0; i < y2 - y1; i++) {
+        drawFastHLine(x1, y1 + i, x2 - x1, color);
+    }
+}
+void drawRect(int x1, int y1, int x2, int y2, bool color) {
+    drawFastHLine(x1, y1, x2 - x1, color);
+    drawFastVLine(x1, y1, y2 - y1, color);
+    drawFastVLine(x2, y1, y2 - y1, color);
+    drawFastHLine(x1, y2, x2 - x1 + 1, color);
+}
+
+// This is based on Bresenham's line algorithm:
+// https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+namespace internalLinePlotting {  // This set of line drawing functions. I put
+                                  // it in a separate nested namespace to avoid
+                                  // confusion for the user.
+void plotLineLow(int x1, int y1, int x2, int y2, bool color) {
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+    int yi = 1;
+    if (dy < 0) {
+        yi = -1;
+        dy = -dy;
+    }
+    int D = 2 * dy - dx;
+    int y = y1;
+    for (int x = x1; x < x2; x++) {
+        putPixel(x, y, color);
+        if (D > 0) {
+            y += yi;
+            D -= 2 * dy;
+        }
+        D += 2 * dy;
+    }
+}
+void plotLineHigh(int x1, int y1, int x2, int y2, bool color) {
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+    int xi = 1;
+    if (dx < 0) {
+        xi += -1;
+        dx = -dx;
+    }
+    int D = 2 * dx - dy;
+    int x = x1;
+
+    for (int y = y1; y < y2; y++) {
+        putPixel(x, y, color);
+        if (D > 0) {
+            x += xi;
+            D -= 2 * dy;
+        }
+        D += 2 * dx;
+    }
+}
+}  // namespace internalLinePlotting
+void drawLine(int x1, int y1, int x2, int y2, bool color) {
+    if (abs(y2 - y1) < abs(x2 - x1)) {
+        if (x1 > x2) {
+            internalLinePlotting::plotLineLow(x2, y2, x1, y1, color);
+        } else {
+            internalLinePlotting::plotLineLow(x1, y1, x2, y2, color);
+        }
+    } else {
+        if (y1 > y2) {
+            internalLinePlotting::plotLineHigh(x2, y2, x1, y1, color);
+        } else {
+            internalLinePlotting::plotLineHigh(x1, y1, x2, y2, color);
+        }
+    }
+}
+void clear() {
+    memset(VIDEO::matrix,0,sizeof(VIDEO::matrix));
+}
+namespace internalRendering {
 void hSync() {
     signalOff;
     delayMicroseconds(1);  // Front porch
@@ -109,30 +197,6 @@ void vSync() {  //! THIS IS A FAKE PROGRESSIVE SCAN FOR PAL. TESTING SHOWS THIS
         return;
     }
 }
-
-void putPixel(int x, int y, bool color) { matrix[y + 1][x + 1] = color; }
-void drawFastHLine(int x, int y, int length, bool color) {
-    for (int i = 0; i < length; i++) {
-        putPixel(i + x, y, color);
-    }
-}
-void drawFastVLine(int x, int y, int length, bool color) {
-    for (int i = 0; i < length; i++) {
-        putPixel(x, i + y, color);
-    }
-}
-void drawFullRect(int x1, int y1, int x2, int y2, bool color) {
-    for (int i = 0; i < y2-y1; i++) {
-        drawFastHLine(x1,y1 + i, x2 - x1, color);
-    }
-}
-void drawRect(int x1, int y1, int x2, int y2, bool color) {
-    drawFastHLine(x1, y1, x2 - x1, color);
-    drawFastVLine(x1, y1, y2 - y1, color);
-    drawFastVLine(x2, y1, y2 - y1, color);
-    drawFastHLine(x1, y2, x2 - x1 + 1, color);
-}
-
 void pulse(bool white) {  // Either sends a pulse or turns it off based on the
                           // color of the pixel
     if (white) {
@@ -156,15 +220,15 @@ void drawRow(bool arr[]) {  // Draws a row from the matrix to the screen
         NOP;
         NOP;
         NOP;
-        NOP;/*
-        NOP;
-        NOP;
-        NOP;
-        NOP;
-        NOP;
-        NOP;
-        NOP;
-        NOP;*/
+        NOP; /*
+         NOP;
+         NOP;
+         NOP;
+         NOP;
+         NOP;
+         NOP;
+         NOP;
+         NOP;*/
 #endif
     }
     signalOff;
@@ -188,7 +252,7 @@ void line() {
 
     lines++;
 }
-
+}  // namespace internalLineRendering
 void begin() {
     pinMode(SYNC, OUTPUT);
     pinMode(SIGNAL, OUTPUT);
@@ -203,7 +267,7 @@ void begin() {
     timer.setPeriod(64);
     timer.setChannel1Mode(TIMER_OUTPUT_COMPARE);
     timer.setCompare(TIMER_CH1, 1);
-    timer.attachCompare1Interrupt(line);
+    timer.attachCompare1Interrupt(internalRendering::line);
     timer.refresh();
     timer.resume();
 }
