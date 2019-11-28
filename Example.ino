@@ -1,3 +1,5 @@
+#include "STM32Composite.h"
+
 void setup() {    
     VIDEO::begin(); //Sets up the interrupt, must be called first.
 
