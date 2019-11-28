@@ -121,6 +121,17 @@ void drawFastVLine(int x, int y, int length, bool color) {
         putPixel(x, i + y, color);
     }
 }
+void drawFullRect(int x1, int y1, int x2, int y2, bool color) {
+    for (int i = 0; i < y2-y1; i++) {
+        drawFastHLine(x1,y1 + i, x2 - x1, color);
+    }
+}
+void drawRect(int x1, int y1, int x2, int y2, bool color) {
+    drawFastHLine(x1, y1, x2 - x1, color);
+    drawFastVLine(x1, y1, y2 - y1, color);
+    drawFastVLine(x2, y1, y2 - y1, color);
+    drawFastHLine(x1, y2, x2 - x1 + 1, color);
+}
 
 void pulse(bool white) {  // Either sends a pulse or turns it off based on the
                           // color of the pixel
@@ -145,6 +156,7 @@ void drawRow(bool arr[]) {  // Draws a row from the matrix to the screen
         NOP;
         NOP;
         NOP;
+        NOP;/*
         NOP;
         NOP;
         NOP;
@@ -152,8 +164,7 @@ void drawRow(bool arr[]) {  // Draws a row from the matrix to the screen
         NOP;
         NOP;
         NOP;
-        NOP;
-        NOP;
+        NOP;*/
 #endif
     }
     signalOff;
