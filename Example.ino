@@ -1,15 +1,21 @@
-//#define WIDTH 10
-//#define HEIGHT 10
+#define WIDTH 94
+#define HEIGHT 94
 
 #include "STM32Composite.h"
 
+const bool PROGMEM bmp[] = {0,0,0,0,0,0,0,0,
+                            0,0,0,0,0,0,0,0,
+                            0,0,1,0,0,1,0,0,
+                            0,0,0,0,0,0,0,0,
+                            0,1,0,0,0,0,1,0,
+                            0,0,1,1,1,1,0,0,
+                            0,0,0,0,0,0,0,0,
+                            0,0,0,0,0,0,0,0};
+
 void setup() {
     VIDEO::begin();  // Sets up the interrupt, must be called first.
-    
+    VIDEO::drawBMP(0,10,8,8,bmp);
 }
 
-void loop() {
-    VIDEO::clear();
-    VIDEO::drawCircle(VIDEO::width/2, VIDEO::height/2, (millis()/1000)%VIDEO::width/2, WHITE);
-    delay(33);
-}
+void loop() { }
+

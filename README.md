@@ -9,7 +9,7 @@ The code relies on the STM32's software timers to create a series of sync pulses
 # Considerations
 This only works with PAL. I have not managed to get a progressive NTSC scan to work. If you know how to achieve one please open an issue or make a pull request.
 
-It is pretty much required to use the -O3 optimizer with this code, you should also overclock the board to 128Mhz if you can. 
+It is pretty much required to use the -O3 optimizer with this code and to overclock the board to 128Mhz.
 
 If you opt to leave all the settings at their defaults then you can go into the header file and uncomment the "SLOW_MODE" definition. This will give you very chunky pixels but it will work.
 
