@@ -1,4 +1,5 @@
 #pragma once
+#include "font8x8_basic.h"
 
 // Cheatsheet: http://www.batsocks.co.uk/readme/video_timing.htm
 
@@ -46,6 +47,12 @@ const int width = WIDTH;
 
 bool matrix[height][width];
 volatile int lines = 1;
+
+struct vector {
+    int x,y;
+};
+
+vector cursorPosition;
 
 void putPixel(int x, int y, bool color) {
     matrix[min(height - 1, y + 1)][min(width - 1, x + 1)] = color;
@@ -152,6 +159,22 @@ void drawBMP(int x, int y, int width, int height, const bool* image) {
         VIDEO::putPixel(x + (i % width), y + floor(i / width),
                         pgm_read_byte_near(image + i));
     }
+}
+void setCursor(int x, int y) {
+    cursorPosition.x = x;
+    cursorPosition.y = y;
+}
+void drawChar(char character) {
+    for (int i = 0; i < 64; i++) {
+        putPixel(cursorPosition.x + (i % 8), cursorPosition.y + floor(i / 8), (font8x8_basic[character][(int)(floor(i / 8))] >> i%8) & 1);
+    }
+    cursorPosition.x += 8;
+}
+void print(String string) {
+    for (int i = 0; i < string.length(); i++) {
+        drawChar(string.charAt(i));
+    }
+
 }
 namespace internalRendering {
 void hSync() {
