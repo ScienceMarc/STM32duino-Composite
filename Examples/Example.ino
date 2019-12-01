@@ -1,6 +1,3 @@
-#define WIDTH 128
-#define HEIGHT 94
-
 #include "STM32Composite.h"
 
 const bool PROGMEM bmp[] = {0,0,0,0,0,0,0,0,
