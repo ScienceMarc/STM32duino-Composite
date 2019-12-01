@@ -1,5 +1,6 @@
 #pragma once
-#include "font8x8_basic.h"
+
+#include "font8x6.h"
 
 // Cheatsheet: http://www.batsocks.co.uk/readme/video_timing.htm
 
@@ -156,8 +157,7 @@ void drawCircle(int x, int y, int radius, bool color) {
 
 void drawBMP(int x, int y, int width, int height, const bool* image) {
     for (int i = 0; i < width * height; i++) {
-        VIDEO::putPixel(x + (i % width), y + floor(i / width),
-                        pgm_read_byte_near(image + i));
+        VIDEO::putPixel(x + (i % width), y + floor(i / width), pgm_read_byte_near(image + i));
     }
 }
 void setCursor(int x, int y) {
@@ -165,16 +165,22 @@ void setCursor(int x, int y) {
     cursorPosition.y = y;
 }
 void drawChar(char character) {
-    for (int i = 0; i < 64; i++) {
-        putPixel(cursorPosition.x + (i % 8), cursorPosition.y + floor(i / 8), (font8x8_basic[character][(int)(floor(i / 8))] >> i%8) & 1);
+    for (int i = 0; i < 8 * 6; i++) {
+        putPixel(cursorPosition.x + floor(i / 8), cursorPosition.y + (i % 8), (pgm_read_byte_near(font6x8[character-0x20] + (int)(i/8)) >> i%8) & 1);
     }
-    cursorPosition.x += 8;
+    cursorPosition.x += 6;
+    if (cursorPosition.x + 8 > width) {
+        cursorPosition.x = 0;
+        cursorPosition.y+=8;
+    }
 }
 void print(String string) {
     for (int i = 0; i < string.length(); i++) {
         drawChar(string.charAt(i));
     }
-
+}
+void print(float number) {
+    print(String(number));
 }
 namespace internalRendering {
 void hSync() {
