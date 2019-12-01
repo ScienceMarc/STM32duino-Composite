@@ -171,7 +171,7 @@ void drawChar(char character) {
     cursorPosition.x += 6;
     if (cursorPosition.x + 8 > width) {
         cursorPosition.x = 0;
-        cursorPosition.y+=8;
+        cursorPosition.y+=9;
     }
 }
 void print(String string) {
