@@ -24,8 +24,8 @@
 #define SYNC PB8
 #define SIGNAL PB9
 
-#define WHITE true
-#define BLACK false
+#define WHITE 0xF
+#define BLACK 0x0
 
 namespace VIDEO {
 
@@ -36,17 +36,20 @@ namespace VIDEO {
 #ifdef SLOW_MODE
 const int height = 64;
 const int width = 32;
+uint8_t matrix[64][16];
 #endif
 #ifndef SLOW_MODE
 const int height = 128;
 const int width = 128;
+uint8_t matrix[128][64];
 #endif
 #else
 const int height = HEIGHT;
 const int width = WIDTH;
+uint8_t matrix[height][WIDTH/2];
 #endif
 
-bool matrix[height][width];
+
 volatile int lines = 1;
 
 struct vector {
@@ -55,26 +58,30 @@ struct vector {
 
 vector cursorPosition;
 
-void putPixel(int x, int y, bool color) {
-    matrix[min(height - 1, y + 1)][min(width - 1, x + 1)] = color;
+void putPixel(int x, int y, uint8_t color) {
+    y++;
+    if (x % 2 == 0) {
+        color <<= 4;
+    }
+    matrix[min(height - 1, y)][x/2] |= color;
 }
-void drawFastHLine(int x, int y, int length, bool color) {
+void drawFastHLine(int x, int y, int length, uint8_t color) {
     for (int i = 0; i < length; i++) {
         putPixel(i + x, y, color);
     }
 }
-void drawFastVLine(int x, int y, int length, bool color) {
+void drawFastVLine(int x, int y, int length, uint8_t color) {
     for (int i = 0; i < length; i++) {
         putPixel(x, i + y, color);
     }
 }
 
-void drawFullRect(int x1, int y1, int x2, int y2, bool color) {
+void drawFullRect(int x1, int y1, int x2, int y2, uint8_t color) {
     for (int i = 0; i < y2 - y1; i++) {
         drawFastHLine(x1, y1 + i, x2 - x1, color);
     }
 }
-void drawRect(int x1, int y1, int x2, int y2, bool color) {
+void drawRect(int x1, int y1, int x2, int y2, uint8_t color) {
     drawFastHLine(x1, y1, x2 - x1, color);
     drawFastVLine(x1, y1, y2 - y1, color);
     drawFastVLine(x2, y1, y2 - y1, color);
@@ -86,7 +93,7 @@ void drawRect(int x1, int y1, int x2, int y2, bool color) {
 namespace internalLinePlotting {  // This set of line drawing functions. I put
                                   // it in a separate nested namespace to avoid
                                   // confusion for the user.
-void plotLineLow(int x1, int y1, int x2, int y2, bool color) {
+void plotLineLow(int x1, int y1, int x2, int y2, uint8_t color) {
     int dx = x2 - x1;
     int dy = y2 - y1;
     int yi = 1;
@@ -105,7 +112,7 @@ void plotLineLow(int x1, int y1, int x2, int y2, bool color) {
         D += 2 * dy;
     }
 }
-void plotLineHigh(int x1, int y1, int x2, int y2, bool color) {
+void plotLineHigh(int x1, int y1, int x2, int y2, uint8_t color) {
     int dx = x2 - x1;
     int dy = y2 - y1;
     int xi = 1;
@@ -126,7 +133,7 @@ void plotLineHigh(int x1, int y1, int x2, int y2, bool color) {
     }
 }
 }  // namespace internalLinePlotting
-void drawLine(int x1, int y1, int x2, int y2, bool color) {
+void drawLine(int x1, int y1, int x2, int y2, uint8_t color) {
     if (abs(y2 - y1) < abs(x2 - x1)) {
         if (x1 > x2) {
             internalLinePlotting::plotLineLow(x2, y2, x1, y1, color);
@@ -143,19 +150,19 @@ void drawLine(int x1, int y1, int x2, int y2, bool color) {
 }
 
 void clear() { memset(VIDEO::matrix, 0, sizeof(VIDEO::matrix)); }
-void drawTrig(int x1, int y1, int x2, int y2, int x3, int y3, bool color) {
+void drawTrig(int x1, int y1, int x2, int y2, int x3, int y3, uint8_t color) {
     drawLine(x1, y1, x2, y2, color);
     drawLine(x1, y1, x3, y3, color);
     drawLine(x2, y2, x3 + 1, y3, color);
 }
-void drawCircle(int x, int y, int radius, bool color) {
+void drawCircle(int x, int y, int radius, uint8_t color) {
     for (float a = 0; a < 360; a++) {
         putPixel(sin(a * 0.0174532925) * radius + x,
                  cos(a * 0.0174532925) * radius + y, color);
     }
 }
 
-void drawBMP(int x, int y, int width, int height, const bool* image) {
+void drawBMP(int x, int y, int width, int height, const uint8_t* image) {
     for (int i = 0; i < width * height; i++) {
         VIDEO::putPixel(x + (i % width), y + floor(i / width), pgm_read_byte_near(image + i));
     }
@@ -248,21 +255,39 @@ void vSync() {  //! THIS IS A FAKE PROGRESSIVE SCAN FOR PAL. TESTING SHOWS THIS
         return;
     }
 }
-void pulse(bool white) {  // Either sends a pulse or turns it off based on the
-                          // color of the pixel
-    if (white) {
+void pulse(uint8_t white) {  // Either sends a pulse or turns it off based on the
+                             // color of the pixel
+    if (white > 0) {
         signalOn;
     } else {
         signalOff;
     }
 }
 
-void drawRow(bool arr[]) {  // Draws a row from the matrix to the screen
-    for (int i = 0; i < width; i++) {
-        pulse(arr[i]);
+void drawRow(uint8_t arr[]) {  // Draws a row from the matrix to the screen
+    for (int i = 0; i < width/2; i++) {
+        pulse(arr[i] >> 4);
 //* These NOPs are to create a bit of delay because otherwise the pixels
 //* are too small and are a little fuzzy because the signal did not have
 //* time to rise and fall.
+#ifndef SLOW_MODE
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+        NOP;
+#endif
+        pulse(arr[i] & 0xF);
 #ifndef SLOW_MODE
         NOP;
         NOP;
@@ -288,7 +313,7 @@ void line() {
     vSync();
     hSync();
     if (lines > 33) {
-        if ((lines - 33) / pixelHeight <= height - 1) {
+        if ((lines - 33) / pixelHeight <= height - 2) {
             drawRow(matrix[min(height - 1, (lines - 33) / pixelHeight)]);
         }
     }
