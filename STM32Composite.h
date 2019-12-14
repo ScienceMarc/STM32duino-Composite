@@ -15,8 +15,7 @@
 
 // Port manipulation
 
-#define signalOn GPIOB->regs->BSRR = 0b0000001000000000
-#define signalOff GPIOB->regs->BRR = 0b0000001000000000
+#define signalOff GPIOA->regs->BRR = 0b1111111111111111
 
 #define syncOn GPIOB->regs->BSRR = 0b0000000100000000
 #define syncOff GPIOB->regs->BRR = 0b0000000100000000
@@ -60,10 +59,14 @@ vector cursorPosition;
 
 void putPixel(int x, int y, uint8_t color) {
     y++;
-    if (x % 2 == 0) {
-        color <<= 4;
+    if (x % 2 == 0) { //Higher nibble
+        matrix[min(height - 1, y)][min(width - 1,x/2)] &= 0x0F;
+        matrix[min(height - 1, y)][min(width - 1,x/2)] |= ((color << 4) & 0xF0);
     }
-    matrix[min(height - 1, y)][x/2] |= color;
+    else { //Lower nibble
+        matrix[min(height - 1, y)][min(width - 1,x/2)] &= 0xF0;
+        matrix[min(height - 1, y)][min(width - 1,x/2)] |= (color & 0x0F);
+    }
 }
 void drawFastHLine(int x, int y, int length, uint8_t color) {
     for (int i = 0; i < length; i++) {
@@ -76,16 +79,20 @@ void drawFastVLine(int x, int y, int length, uint8_t color) {
     }
 }
 
-void drawFullRect(int x1, int y1, int x2, int y2, uint8_t color) {
+void drawFullRect(int x, int y, int w, int h, uint8_t color) {
+    for (int i = 0; i < h; i++) {
+        drawFastHLine(x,y+i,w,color);
+    }
+    /*
     for (int i = 0; i < y2 - y1; i++) {
         drawFastHLine(x1, y1 + i, x2 - x1, color);
-    }
+    }*/
 }
-void drawRect(int x1, int y1, int x2, int y2, uint8_t color) {
-    drawFastHLine(x1, y1, x2 - x1, color);
-    drawFastVLine(x1, y1, y2 - y1, color);
-    drawFastVLine(x2, y1, y2 - y1, color);
-    drawFastHLine(x1, y2, x2 - x1 + 1, color);
+void drawRect(int x, int y, int w, int h, uint8_t color) {
+    drawFastHLine(x, y, w, color);
+    drawFastHLine(x, y + h, w+1, color);
+    drawFastVLine(x + w, y, h, color);
+    drawFastVLine(x, y, h, color);
 }
 
 // This is based on Bresenham's line algorithm:
@@ -255,13 +262,12 @@ void vSync() {  //! THIS IS A FAKE PROGRESSIVE SCAN FOR PAL. TESTING SHOWS THIS
         return;
     }
 }
-void pulse(uint8_t white) {  // Either sends a pulse or turns it off based on the
+void pulse(uint8_t color) {  // Either sends a pulse or turns it off based on the
                              // color of the pixel
-    if (white > 0) {
-        signalOn;
-    } else {
-        signalOff;
-    }
+    int a = (int)(color) << 1;
+    int b = ~((int)(color) << 1);
+    GPIOA->regs->BSRR = a;
+    GPIOA->regs->BRR = b;
 }
 
 void drawRow(uint8_t arr[]) {  // Draws a row from the matrix to the screen
@@ -323,7 +329,10 @@ void line() {
 }  // namespace internalRendering
 void begin() {
     pinMode(SYNC, OUTPUT);
-    pinMode(SIGNAL, OUTPUT);
+    pinMode(PA1, OUTPUT);
+    pinMode(PA2, OUTPUT);
+    pinMode(PA3, OUTPUT);
+    pinMode(PA4, OUTPUT);
     pinMode(PB12, OUTPUT);
     HardwareTimer timer(1);  // Uses hardware timer 1.
                              //! THIS MAY AFFECT ALL PINS WHICH USE THIS TIMER

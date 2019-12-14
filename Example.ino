@@ -1,18 +1,24 @@
 #include "STM32Composite.h"
 
-const uint8_t PROGMEM bmp[] = {0,0,0,0,0,0,0,0,
-                               0,0,0,0,0,0,0,0,
-                               0,0,1,0,0,1,0,0,
-                               0,0,0,0,0,0,0,0,
-                               0,1,0,0,0,0,1,0,
-                               0,0,1,1,1,1,0,0,
-                               0,0,0,0,0,0,0,0,
-                               0,0,0,0,0,0,0,0};
+const uint8_t PROGMEM bmp[] = {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+                               0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+                               0x0,0x0,0xF,0x0,0x0,0xB,0x0,0x0,
+                               0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+                               0x0,0xF,0x0,0x0,0x0,0x0,0xF,0x0,
+                               0x0,0x0,0x9,0xB,0xD,0xF,0x0,0x0,
+                               0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+                               0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
 
 void setup() {
     VIDEO::begin();  // Sets up the interrupt, must be called first.
-    VIDEO::drawBMP(0,10,8,8,bmp);
-    VIDEO::setCursor(0,50);
-    VIDEO::print("Hello, World!");
 }
-void loop() { }
+int x = 0;
+void loop() { 
+    VIDEO::clear();
+    VIDEO::drawBMP(0,0,8,8,bmp);
+    int time = millis()/6;
+    int brightness = min(0xF,(sin(time*(TWO_PI/360))+1)*6)+4;
+    VIDEO::drawFullRect(x%VIDEO::width,0,50,50,brightness);
+    delay(42);
+    x++;
+}
